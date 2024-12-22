@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}Welcome!{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        {% block stylesheets %}
+        {% endblock %}
+
+        {% block javascripts %}
+        {% endblock %}
+    </head>
+    <body>
+        <h3>Current JSON formats</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Format</th>
+                </tr>
+            </thead>
+            {% for format in formats_json %}
+                <tr>
+                    <td>{{ format }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <h3>Current JSON-LD formats</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Format</th>
+                </tr>
+            </thead>
+            {% for format in formats_jsonld %}
+                <tr>
+                    <td>{{ format }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <br />
+        <br />
+        <h1>Scenario 1: application/json is not recognized after 406</h1>
+        <div>
+            <ul>
+                <li>1. Result: Not NULL returned: <button onclick="doContentTypeToFormatCall('application/json')">POST /content-type-to-format [application/json]</button></li>
+                <li>2. <button onclick="doPatchCall(false, true)">PATCH /api/test_api_resources/1 (Not allowed Accept format)</button></li>
+                <li>3. Result: NULL returned: <button onclick="doContentTypeToFormatCall('application/json')">POST /content-type-to-format [application/json]</button></li>
+            </ul>
+        </div>
+        <h1>Scenario 2: application/ld+json is not recognized after 500</h1>
+        <div>
+            <ul>
+                <li>1. Result: Not NULL returned: <button onclick="doContentTypeToFormatCall('application/ld+json')">POST /content-type-to-format [application/ld+json]</button></li>
+                <li>2. <button onclick="doPatchCall(true)">PATCH /api/test_api_resources/1?exception=true</button></li>
+                <li>3. Result: NULL returned: <button onclick="doContentTypeToFormatCall('application/ld+json')">POST /content-type-to-format [application/ld+json]</button></li>
+            </ul>
+        </div>
+        <h1>Scenario 3: Failures are kept in memory</h1>
+        <div>
+            <ul>
+                <li>1. docker compose restart php (just to clear the result of the previous scenario's)</li>
+                <li>2. <button onclick="doPatchCall(false, true)">PATCH /api/test_api_resources/1 (Not allowed Accept format)</button></li>
+                <li>3. <button onclick="doPatchCall(true)">PATCH /api/test_api_resources/1?exception=true</button></li>
+                <li>4. Refresh the page and check the "Current JSON formats" and "Current JSON-LD formats"</li>
+            </ul>
+        </div>
+
+        <h1>Other</h1>
+        <button onclick="doContentTypeToFormatCall('application/json')">POST /content-type-to-format [application/json]</button>
+        <br />
+        <button onclick="doContentTypeToFormatCall('application/ld+json')">POST /content-type-to-format [application/ld+json]</button>
+        <br />
+        <br />
+        <button onclick="doGetCall()">GET /api/test_api_resources</button>
+        <br />
+        <button onclick="doGetCall(true)">GET /api/test_api_resources?exception=true</button>
+        <br />
+        <button onclick="doPatchCall()">PATCH /api/test_api_resources/1</button>
+        <br />
+        <button onclick="doPatchCall(true)">PATCH /api/test_api_resources/1?exception=true</button>
+        <br />
+        <button onclick="doPatchCall(false, true)">PATCH /api/test_api_resources/1 (Not allowed Accept format)</button>
+        <br />
+        <script>
+            function doGetCall(exception = false) {
+                fetch(`/api/test_api_resources${exception ? '?exception=true' : ''}`)
+                    .then(response => response.json())
+                    .then(data => console.log(data));
+            }
+
+            function doPatchCall(exception = false, notAllowedAccept = false) {
+                fetch(`/api/test_api_resources/1${exception ? '?exception=true' : ''}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Accept': notAllowedAccept ? 'application/json' : 'application/ld+json',
+                        'Content-Type': 'application/merge-patch+json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Updated name'
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => console.log(data));
+            }
+
+            function doContentTypeToFormatCall(contentType) {
+                fetch('/content-type-to-format', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': contentType
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        window.alert(JSON.stringify(data, null, 2));
+                    });
+            }
+        </script>
+    </body>
+</html>

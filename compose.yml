@@ -1,0 +1,13 @@
+services:
+  php:
+    build:
+        context: .
+        dockerfile: php.Dockerfile
+    ports: [ "443:443", "80:80", "2019:2019" ]
+    volumes:
+      - ./app:/app
+      - ./app-config/caddy/prod.Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data/caddy
+
+volumes:
+  caddy_data:

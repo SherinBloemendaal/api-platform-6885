@@ -1,0 +1,44 @@
+{
+	auto_https disable_redirects
+    frankenphp {
+		worker {
+			file /app/public/index.php
+			watch /app/src
+			watch /app/config
+			watch /app/templates
+			watch /app/migrations
+			watch /app/public
+		}
+    }
+	servers {
+		trusted_proxies static private_ranges
+    }
+}
+
+http:// {
+	log console
+
+	header {
+		-X-Powered-By
+	}
+
+	route /health {
+		respond "OK" 200
+	}
+
+    route {
+        root * /app/public
+        encode zstd gzip
+
+        php_server
+
+        @phpFile {
+            path *.php*
+        }
+        error @phpFile "Not found" 404
+
+        file_server
+
+        respond "Not found." 404
+    }
+}
